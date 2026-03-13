@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetBase - Admin Panel</title>
+    <title>NetBase - Admin Panel Pro</title>
     <style>
         :root { --primary: #800080; --bg: #0f0f0f; --card: #1a1a1a; --accent: #ff4500; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #444; width: 100%; color: white; background: #000; margin-bottom: 15px; box-sizing: border-box; }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        .btn:hover { background: var(--accent); }
-        .api-item { background: #252525; padding: 15px; margin: 10px 0; border-radius: 10px; text-align: left; font-size: 0.8rem; border-left: 4px solid var(--primary); word-break: break-all; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
+        input { padding: 12px; width: 100%; border-radius: 5px; border: 1px solid #444; background: #000; color: white; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; }
+        .api-item { background: #252525; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: left; font-size: 0.8rem; border-left: 3px solid var(--primary); word-break: break-all; }
         #admin-content { display: none; }
     </style>
 </head>
@@ -26,46 +24,65 @@
 
     <div id="admin-content" class="card">
         <h3>Painel NetBase</h3>
-        <input type="text" id="db-name" placeholder="Nome do Banco de Dados...">
+        <input type="text" id="db-name" placeholder="Nome do novo banco...">
         <button class="btn" onclick="criarBanco()">GERAR API DE BANCO</button>
-        <div id="api-list"></div>
+        <div id="api-list">Carregando seus bancos da nuvem...</div>
     </div>
 
     <script>
         const X_MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
+        // O ID do BIN onde vamos salvar a lista de todas as suas APIs
+        const LISTA_ID = "67d3d75eead3e82756184511"; 
         const SENHA_CORRETA = "netchaveapi";
 
         function verificarSenha() {
             if(document.getElementById('secret-pass').value === SENHA_CORRETA) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('admin-content').style.display = 'block';
-                renderizarLista();
+                carregarListaNuvem();
             } else { alert("Senha Incorreta!"); }
+        }
+
+        // Busca a lista completa na nuvem
+        async function carregarListaNuvem() {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, {
+                headers: { 'X-Master-Key': X_MASTER_KEY }
+            });
+            const data = await res.json();
+            renderizarLista(data.record.bancos || []);
         }
 
         async function criarBanco() {
             const nome = document.getElementById('db-name').value || "MeuBanco";
+            
+            // 1. Cria o novo bin de banco
             const res = await fetch('https://api.jsonbin.io/v3/b', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': X_MASTER_KEY
-                },
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
                 body: JSON.stringify({ app: nome, data: [] })
             });
             const data = await res.json();
             const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
+
+            // 2. Atualiza a lista mestra na nuvem
+            let listaAtual = await (await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }})).json();
+            let bancos = listaAtual.record.bancos || [];
+            bancos.push(novaAPI);
             
-            let historico = JSON.parse(localStorage.getItem('netbase_apis') || '[]');
-            historico.push(novaAPI);
-            localStorage.setItem('netbase_apis', JSON.stringify(historico));
-            renderizarLista();
+            await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
+                body: JSON.stringify({ bancos: bancos })
+            });
+
+            carregarListaNuvem();
+            document.getElementById('db-name').value = "";
         }
 
-        function renderizarLista() {
-            const list = document.getElementById('api-list');
-            const historico = JSON.parse(localStorage.getItem('netbase_apis') || '[]');
-            list.innerHTML = historico.map(api => `<div class="api-item"><b>${api.nome}</b><br>${api.url}</div>`).join('');
+        function renderizarLista(lista) {
+            document.getElementById('api-list').innerHTML = lista.map(api => `
+                <div class="api-item"><b>📦 ${api.nome}</b><br>${api.url}</div>
+            `).reverse().join('');
         }
     </script>
 </body>
