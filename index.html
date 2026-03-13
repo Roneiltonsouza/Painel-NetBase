@@ -20,8 +20,7 @@
 
     <div id="login-screen" class="card">
         <h3>NetBase Login</h3>
-        <p>Acesso Restrito</p>
-        <input type="password" id="secret-pass" placeholder="Digite a senha secreta...">
+        <input type="password" id="secret-pass" placeholder="Senha secreta...">
         <button class="btn" onclick="verificarSenha()">ENTRAR</button>
     </div>
 
@@ -30,87 +29,43 @@
         <input type="text" id="db-name" placeholder="Nome do Banco de Dados...">
         <button class="btn" onclick="criarBanco()">GERAR API DE BANCO</button>
         <div id="api-list"></div>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-        <button class="btn" style="background: #444;" onclick="sair()">SAIR</button>
     </div>
 
     <script>
-        const X_MASTER_KEY = "SUA_MASTER_KEY_AQUI"; // Coloque sua chave do JSONbin aqui
+        const X_MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
         const SENHA_CORRETA = "netchaveapi";
 
-        // Verifica se já estava logado
-        if(sessionStorage.getItem('logado') === 'true') {
-            mostrarPainel();
-        }
-
         function verificarSenha() {
-            const pass = document.getElementById('secret-pass').value;
-            if(pass === SENHA_CORRETA) {
-                sessionStorage.setItem('logado', 'true');
-                mostrarPainel();
-            } else {
-                alert("Senha Incorreta!");
-            }
-        }
-
-        function mostrarPainel() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-content').style.display = 'block';
-            renderizarLista();
-        }
-
-        function sair() {
-            sessionStorage.removeItem('logado');
-            location.reload();
+            if(document.getElementById('secret-pass').value === SENHA_CORRETA) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                renderizarLista();
+            } else { alert("Senha Incorreta!"); }
         }
 
         async function criarBanco() {
             const nome = document.getElementById('db-name').value || "MeuBanco";
-            const btn = document.querySelector('.btn');
+            const res = await fetch('https://api.jsonbin.io/v3/b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': X_MASTER_KEY
+                },
+                body: JSON.stringify({ app: nome, data: [] })
+            });
+            const data = await res.json();
+            const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
             
-            btn.innerText = "CRIANDO...";
-            btn.disabled = true;
-
-            try {
-                const res = await fetch('https://api.jsonbin.io/v3/b', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': X_MASTER_KEY
-                    },
-                    body: JSON.stringify({ app: nome, created_at: new Date(), data: [] })
-                });
-
-                const data = await res.json();
-                const novaAPI = { 
-                    nome: nome, 
-                    url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` 
-                };
-
-                // Salva no histórico local
-                let historico = JSON.parse(localStorage.getItem('netbase_apis') || '[]');
-                historico.push(novaAPI);
-                localStorage.setItem('netbase_apis', JSON.stringify(historico));
-
-                renderizarLista();
-                document.getElementById('db-name').value = "";
-            } catch (err) {
-                alert("Erro ao conectar com JSONbin. Verifique sua Master Key.");
-            } finally {
-                btn.innerText = "GERAR API DE BANCO";
-                btn.disabled = false;
-            }
+            let historico = JSON.parse(localStorage.getItem('netbase_apis') || '[]');
+            historico.push(novaAPI);
+            localStorage.setItem('netbase_apis', JSON.stringify(historico));
+            renderizarLista();
         }
 
         function renderizarLista() {
             const list = document.getElementById('api-list');
             const historico = JSON.parse(localStorage.getItem('netbase_apis') || '[]');
-            list.innerHTML = historico.map(api => `
-                <div class="api-item">
-                    <b>📦 ${api.nome}</b><br>
-                    <small>${api.url}</small>
-                </div>
-            `).reverse().join('');
+            list.innerHTML = historico.map(api => `<div class="api-item"><b>${api.nome}</b><br>${api.url}</div>`).join('');
         }
     </script>
 </body>
