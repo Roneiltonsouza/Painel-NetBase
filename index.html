@@ -2,68 +2,80 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetBase Painel</title>
     <style>
         body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
         .card { background: #1a1a1a; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
-        input, .btn { padding: 12px; width: 100%; margin-bottom: 10px; border-radius: 5px; box-sizing: border-box; }
-        .btn { background: #800080; color: white; border: none; cursor: pointer; }
+        input { padding: 12px; width: 100%; border-radius: 5px; border: 1px solid #444; background: #000; color: white; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background: #800080; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; }
+        .api-item { background: #252525; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: left; font-size: 0.8rem; border-left: 3px solid #800080; word-break: break-all; }
+        #admin-content { display: none; }
     </style>
 </head>
 <body>
     <div id="login-screen" class="card">
-        <input type="password" id="secret-pass" placeholder="Senha...">
-        <button class="btn" onclick="verificar()">ENTRAR</button>
+        <h3>NetBase Login</h3>
+        <input type="password" id="secret-pass" placeholder="Senha secreta...">
+        <button class="btn" onclick="verificarSenha()">ENTRAR</button>
     </div>
-    <div id="admin-content" class="card" style="display:none;">
-        <input type="text" id="db-name" placeholder="Nome do banco...">
+
+    <div id="admin-content" class="card">
+        <h3>Painel NetBase</h3>
+        <input type="text" id="db-name" placeholder="Nome do novo banco...">
         <button class="btn" onclick="criarBanco()">GERAR API DE BANCO</button>
-        <div id="api-list"></div>
+        <div id="api-list">Carregando seus bancos...</div>
     </div>
 
     <script>
-        const KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
-        const BIN_ID = "69b4a54aaa77b81da9e1eebf";
+        const X_MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
+        const LISTA_ID = "69b4a54aaa77b81da9e1eebf"; 
+        const SENHA_CORRETA = "netchaveapi";
 
-        function verificar() {
-            if(document.getElementById('secret-pass').value === "netchaveapi") {
+        function verificarSenha() {
+            if(document.getElementById('secret-pass').value === SENHA_CORRETA) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('admin-content').style.display = 'block';
-                carregar();
-            }
+                carregarLista();
+            } else { alert("Senha Incorreta!"); }
         }
 
-        async function carregar() {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: {'X-Master-Key': KEY} });
-            const json = await res.json();
-            const lista = json.record && json.record.bancos ? json.record.bancos : [];
-            document.getElementById('api-list').innerHTML = lista.map(b => `<p>${b.nome}: ${b.url}</p>`).join('');
+        async function carregarLista() {
+            const listDiv = document.getElementById('api-list');
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, {
+                    headers: { 'X-Master-Key': X_MASTER_KEY }
+                });
+                const json = await res.json();
+                const lista = (json.record && json.record.bancos) ? json.record.bancos : [];
+                listDiv.innerHTML = lista.map(api => `<div class="api-item"><b>${api.nome}</b><br>${api.url}</div>`).reverse().join('');
+            } catch(e) { listDiv.innerHTML = "Erro ao carregar lista: " + e.message; }
         }
 
         async function criarBanco() {
-            const nome = document.getElementById('db-name').value || "Novo";
-            // Cria o bin individual
-            const res = await fetch('https://api.jsonbin.io/v3/b', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-Master-Key': KEY, 'X-Bin-Private': 'true'},
-                body: JSON.stringify({ app: nome })
-            });
-            const data = await res.json();
-            const id = data.metadata.id;
-            
-            // Adiciona na lista mestra
-            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: {'X-Master-Key': KEY} });
-            const json = await resGet.json();
-            let lista = json.record && json.record.bancos ? json.record.bancos : [];
-            lista.push({nome: nome, url: `https://api.jsonbin.io/v3/b/${id}`});
+            const nome = document.getElementById('db-name').value || "MeuBanco";
+            try {
+                const res = await fetch('https://api.jsonbin.io/v3/b', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY, 'X-Bin-Private': 'true' },
+                    body: JSON.stringify({ app: nome, data: [] })
+                });
+                const data = await res.json();
+                const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
 
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json', 'X-Master-Key': KEY},
-                body: JSON.stringify({bancos: lista})
-            });
-            alert("Sucesso!");
-            carregar();
+                const getLista = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }});
+                const listaData = await getLista.json();
+                let lista = (listaData.record && listaData.record.bancos) ? listaData.record.bancos : [];
+                lista.push(novaAPI);
+
+                await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
+                    body: JSON.stringify({ bancos: lista })
+                });
+                carregarLista();
+                document.getElementById('db-name').value = "";
+            } catch(e) { alert("Erro na criação: " + e.message); }
         }
     </script>
 </body>
