@@ -2,16 +2,18 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase Cloud - Completo</title>
+    <title>NetBase Cloud - Edição Rápida</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
         .box { width: 100%; max-width: 400px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: #800080; color: #fff; font-weight: bold; cursor: pointer; }
-        .item { background: #222; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-acao { width: auto; padding: 5px 10px; font-size: 12px; margin-left: 5px; }
-        .btn-del { background: #ff4444; }
-        .btn-copy { background: #444; }
+        .input-group { display: flex; gap: 5px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 16px; background: #222; color: #fff; }
+        button { padding: 12px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-salvar { background: #800080; color: #fff; min-width: 50px; }
+        .item { background: #222; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #800080; }
+        .btn-acao { width: auto; padding: 5px 8px; font-size: 12px; margin-left: 5px; }
+        .btn-del { background: #ff4444; color: white; }
+        .btn-copy { background: #444; color: white; }
     </style>
 </head>
 <body>
@@ -19,13 +21,17 @@
     <div id="login-box" class="box">
         <h3>Login NetBase</h3>
         <input type="password" id="senha-acesso" placeholder="Senha única...">
-        <button onclick="entrar()">ENTRAR</button>
+        <button onclick="entrar()" style="width: 100%; margin-top: 10px; background: #800080; color: white;">ENTRAR</button>
     </div>
 
     <div id="painel" class="box" style="display:none;">
-        <h3>Suas APIs</h3>
-        <input type="text" id="api-nome" placeholder="Cole o nome ou API aqui...">
-        <button onclick="salvar()">SALVAR NOVA API</button>
+        <h3>Minhas APIs</h3>
+        
+        <div class="input-group">
+            <input type="text" id="api-nome" placeholder="Escreva ou copie aqui...">
+            <button class="btn-salvar" onclick="salvar()">+</button>
+        </div>
+
         <div id="lista-apis"></div>
     </div>
 
@@ -47,7 +53,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // LOGIN
         window.entrar = () => {
             if(document.getElementById('senha-acesso').value === "netchaveapi") {
                 document.getElementById('login-box').style.display = 'none';
@@ -56,37 +61,34 @@
             } else { alert("Senha incorreta!"); }
         };
 
-        // SALVAR
         window.salvar = () => {
-            const nome = document.getElementById('api-nome').value;
-            if(!nome) return;
-            push(ref(db, 'apis/'), { nome: nome });
-            document.getElementById('api-nome').value = "";
+            const input = document.getElementById('api-nome');
+            if(!input.value) return;
+            push(ref(db, 'apis/'), { nome: input.value });
+            input.value = "";
         };
 
-        // COPIAR
-        window.copiar = (texto) => {
-            navigator.clipboard.writeText(texto);
-            alert("API copiada!");
+        // AGORA COPIA PARA O CAMPO DE ENTRADA
+        window.copiarParaInput = (texto) => {
+            const input = document.getElementById('api-nome');
+            input.value = texto;
+            input.focus(); // Coloca o cursor no campo
         };
 
-        // EXCLUIR
         window.excluir = (id) => {
-            if(confirm("Excluir esta API?")) {
-                remove(ref(db, 'apis/' + id));
-            }
+            remove(ref(db, 'apis/' + id));
         };
 
-        // LISTAR EM TEMPO REAL
         function carregarLista() {
             onValue(ref(db, 'apis/'), (snapshot) => {
                 const lista = document.getElementById('lista-apis');
                 lista.innerHTML = "";
                 snapshot.forEach((child) => {
+                    const nomeApi = child.val().nome;
                     lista.innerHTML += `<div class="item">
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${child.val().nome}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; max-width: 180px;">${nomeApi}</span>
                         <div>
-                            <button class="btn-acao btn-copy" onclick="copiar('${child.val().nome}')">COPIAR</button>
+                            <button class="btn-acao btn-copy" onclick="copiarParaInput('${nomeApi}')">Copiar</button>
                             <button class="btn-acao btn-del" onclick="excluir('${child.key}')">X</button>
                         </div>
                     </div>`;
