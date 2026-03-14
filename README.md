@@ -1,15 +1,19 @@
 # Painel NetBase - Firebase Edition
 
-O Painel NetBase é um gerenciador de banco de dados em tempo real, agora integrado à infraestrutura do Firebase (Realtime Database).
+O Painel NetBase é um gerenciador de banco de dados em tempo real, integrado à infraestrutura do Firebase (Realtime Database).
 
-## Configuração do Projeto
-- **Projeto Firebase:** `real-gps-ed315`
-- **App ID:** `1:1032476157217:web:5539feae0ea17b71150a60`
-- **Banco de Dados:** Realtime Database (Sincronização em tempo real)
+## Configurações do Projeto
+- **Projeto Firebase:** `netbase-cloud`
+- **Database:** Realtime Database (Sincronização em tempo real)
+- **Status do Banco:** Regras de Leitura/Escrita definidas como `true`.
 
-## Como utilizar (Deploy)
-Para publicar as alterações do painel no seu Firebase Hosting, utilize os comandos no terminal:
+## Segurança
+- **Sistema de Login:** O acesso ao painel de geração de APIs está protegido pela chave de acesso: `netchaveapi`.
+- **Validação:** Apenas usuários que inserirem o nome e a senha correta conseguem visualizar os campos de escrita no banco.
+
+## Como fazer o deploy
+Utilize os comandos no seu terminal para publicar as atualizações no Firebase Hosting:
 
 1. **Definir alvo de deploy:**
    ```bash
-   firebase target:apply hosting netbase real-gps-ed315
+   firebase target:apply hosting netbase netbase-cloud
