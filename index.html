@@ -3,125 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetBase - Cloud Sync</title>
+    <title>NetBase Painel</title>
     <style>
-        body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #151515; padding: 25px; border-radius: 20px; width: 90%; max-width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border: 1px solid #333; }
-        h2 { color: #a020f0; margin-bottom: 20px; font-size: 1.5rem; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #a020f0; }
-        .btn { width: 100%; padding: 14px; background: #a020f0; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn:active { transform: scale(0.98); opacity: 0.8; }
-        #api-list { margin-top: 20px; text-align: left; max-height: 250px; overflow-y: auto; }
-        .api-item { background: #202020; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #a020f0; font-size: 0.85rem; }
-        .api-item b { color: #a020f0; display: block; margin-bottom: 4px; }
-        .api-item code { color: #ccc; word-break: break-all; }
-        #admin-content { display: none; }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #111; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #333; }
+        h2 { color: #a020f0; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; background: #a020f0; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        #api-list { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
+        .item { background: #1a1a1a; padding: 10px; margin-bottom: 8px; border-radius: 4px; border-left: 4px solid #a020f0; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="card">
-        <h2>NetBase Login</h2>
-        <input type="password" id="pass" placeholder="Digite sua senha mestra...">
-        <button class="btn" onclick="autenticar()">ACESSAR PAINEL</button>
+    <div class="card">
+        <h2>NetBase Cloud</h2>
+        <input type="text" id="nome" placeholder="Nome do Banco...">
+        <input type="text" id="url" placeholder="URL ou Link...">
+        <button class="btn" onclick="enviar()">GERAR E SALVAR API</button>
+        <div id="api-list">Sincronizando...</div>
     </div>
 
-    <div id="admin-content" class="card">
-        <h2>Painel NetBase</h2>
-        <input type="text" id="db-name" placeholder="Nome do banco (ex: Clientes)">
-        <button class="btn" id="main-btn" onclick="gerarBanco()">GERAR API DE BANCO</button>
-        <div id="api-list">Sincronizando com a nuvem...</div>
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    <script>
-        // Configurações de Conexão (Inteligentes)
-        const MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
-        const BIN_ID = "69b4a54aaa77b81da9e1eebf";
-        const SENHA = "netchaveapi";
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFO0CMhfRLqgCjoDk1zDD5VmIi9EtOLTY",
+            authDomain: "real-gps-ed315.firebaseapp.com",
+            databaseURL: "https://real-gps-ed315-default-rtdb.firebaseio.com",
+            projectId: "real-gps-ed315",
+            appId: "1:1032476157217:web:5539feae0ea17b71150a60"
+        };
 
-        function autenticar() {
-            if(document.getElementById('pass').value === SENHA) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('admin-content').style.display = 'block';
-                carregarDados();
-            } else { alert("Senha incorreta!"); }
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        // Função para garantir que o Bin está configurado corretamente
-        async function carregarDados() {
-            const listContainer = document.getElementById('api-list');
-            try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: { "X-Master-Key": MASTER_KEY }
+        // Função de Envio
+        window.enviar = function() {
+            const nome = document.getElementById('nome').value;
+            const url = document.getElementById('url').value;
+            if(!nome || !url) return alert("Preencha os campos!");
+
+            const listaRef = ref(db, 'bancos');
+            const novoBancoRef = push(listaRef);
+            set(novoBancoRef, { nome, url, data: new Date().toLocaleString() })
+                .then(() => {
+                    document.getElementById('nome').value = "";
+                    document.getElementById('url').value = "";
                 });
-                const data = await res.json();
-                
-                // Se o Bin estiver vazio ou sem a chave "bancos", nós criamos a estrutura agora
-                let bancos = (data.record && data.record.bancos) ? data.record.bancos : [];
-                renderizar(bancos);
-            } catch (e) {
-                listContainer.innerHTML = "Erro de conexão. Verifique sua Master Key.";
-            }
-        }
+        };
 
-        async function gerarBanco() {
-            const nome = document.getElementById('db-name').value || "NovoBanco";
-            const btn = document.getElementById('main-btn');
-            btn.innerText = "COMUNICANDO...";
-            btn.disabled = true;
-
-            try {
-                // 1. Cria o banco novo no JSONbin
-                const resNovo = await fetch('https://api.jsonbin.io/v3/b', {
-                    method: 'POST',
-                    headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-                    body: JSON.stringify({ nome: nome, criacao: new Date().toISOString() })
-                });
-                const dataNovo = await resNovo.json();
-                const novoID = dataNovo.metadata.id;
-
-                // 2. Busca a lista atual, adiciona o novo e salva de volta (Sincronização)
-                const resLista = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: { "X-Master-Key": MASTER_KEY }
-                });
-                const dataLista = await resLista.json();
-                let listaAtual = (dataLista.record && dataLista.record.bancos) ? dataLista.record.bancos : [];
-                
-                listaAtual.push({ nome: nome, url: `https://api.jsonbin.io/v3/b/${novoID}` });
-
-                // 3. Envia a lista atualizada para a nuvem
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'PUT',
-                    headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-                    body: JSON.stringify({ bancos: listaAtual })
-                });
-
-                document.getElementById('db-name').value = "";
-                carregarDados();
-                alert("API Gerada e Salva na Nuvem!");
-
-            } catch (e) {
-                alert("Falha na comunicação: " + e.message);
-            } finally {
-                btn.innerText = "GERAR API DE BANCO";
-                btn.disabled = false;
-            }
-        }
-
-        function renderizar(lista) {
-            const container = document.getElementById('api-list');
-            if(lista.length === 0) {
-                container.innerHTML = "<p style='color: #666;'>Nenhum banco cadastrado.</p>";
-                return;
-            }
-            container.innerHTML = lista.map(item => `
-                <div class="api-item">
-                    <b>📦 ${item.nome}</b>
-                    <code>${item.url}</code>
+        // Escuta em tempo real
+        onValue(ref(db, 'bancos'), (snapshot) => {
+            const dados = snapshot.val();
+            const listDiv = document.getElementById('api-list');
+            if(!dados) { listDiv.innerHTML = "Nenhum banco na nuvem."; return; }
+            
+            listDiv.innerHTML = Object.values(dados).map(b => `
+                <div class="item">
+                    <b>${b.nome}</b><br>
+                    <small>${b.url}</small>
                 </div>
             `).reverse().join('');
-        }
+        });
     </script>
 </body>
 </html>
