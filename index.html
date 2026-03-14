@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetBase - Admin Panel Pro</title>
+    <title>NetBase - Admin Panel</title>
     <style>
         :root { --primary: #800080; --bg: #0f0f0f; --card: #1a1a1a; --accent: #ff4500; }
         body { background: var(--bg); color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
@@ -15,24 +15,20 @@
     </style>
 </head>
 <body>
-
     <div id="login-screen" class="card">
         <h3>NetBase Login</h3>
         <input type="password" id="secret-pass" placeholder="Senha secreta...">
         <button class="btn" onclick="verificarSenha()">ENTRAR</button>
     </div>
-
     <div id="admin-content" class="card">
         <h3>Painel NetBase</h3>
         <input type="text" id="db-name" placeholder="Nome do novo banco...">
         <button class="btn" onclick="criarBanco()">GERAR API DE BANCO</button>
-        <div id="api-list">Carregando seus bancos da nuvem...</div>
+        <div id="api-list">Carregando...</div>
     </div>
-
     <script>
         const X_MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
-        // O ID do BIN onde vamos salvar a lista de todas as suas APIs
-        const LISTA_ID = "67d3d75eead3e82756184511"; 
+        const LISTA_ID = "69b4a54aaa77b81da9e1eebf"; 
         const SENHA_CORRETA = "netchaveapi";
 
         function verificarSenha() {
@@ -43,19 +39,18 @@
             } else { alert("Senha Incorreta!"); }
         }
 
-        // Busca a lista completa na nuvem
         async function carregarListaNuvem() {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, {
-                headers: { 'X-Master-Key': X_MASTER_KEY }
-            });
-            const data = await res.json();
-            renderizarLista(data.record.bancos || []);
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, {
+                    headers: { 'X-Master-Key': X_MASTER_KEY }
+                });
+                const data = await res.json();
+                renderizarLista(data.record.bancos || []);
+            } catch(e) { document.getElementById('api-list').innerHTML = "Erro ao carregar lista."; }
         }
 
         async function criarBanco() {
             const nome = document.getElementById('db-name').value || "MeuBanco";
-            
-            // 1. Cria o novo bin de banco
             const res = await fetch('https://api.jsonbin.io/v3/b', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
@@ -64,9 +59,9 @@
             const data = await res.json();
             const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
 
-            // 2. Atualiza a lista mestra na nuvem
-            let listaAtual = await (await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }})).json();
-            let bancos = listaAtual.record.bancos || [];
+            const listaRes = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }});
+            const listaData = await listaRes.json();
+            let bancos = listaData.record.bancos || [];
             bancos.push(novaAPI);
             
             await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}`, {
@@ -74,9 +69,7 @@
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
                 body: JSON.stringify({ bancos: bancos })
             });
-
             carregarListaNuvem();
-            document.getElementById('db-name').value = "";
         }
 
         function renderizarLista(lista) {
