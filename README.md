@@ -1,20 +1,18 @@
-# NetBase API Manager 🛡️
+# Painel NetBase
 
-Gerenciador de infraestrutura de banco de dados JSON para aplicativos de alta performance.
+Sistema de gerenciamento de bancos de dados via JSONbin.io.
 
-## 🔐 Acesso Seguro
-O painel administrativo é protegido por uma camada de autenticação local via senha secreta, garantindo que apenas o proprietário do projeto possa gerar novas instâncias de banco de dados.
+## Configurações Principais
+- **Senha do Painel:** `netchaveapi`
+- **ID da Lista Mestra:** `69b4a54aaa77b81da9e1eebf`
+- **Master Key:** Utilizada via autenticação segura no script principal.
 
-## ⚙️ Configuração
-1. Obtenha sua **Master Key** no portal do JSONbin.io.
-2. Insira a chave no campo `X_MASTER_KEY` no script do `index.html`.
-3. A senha padrão de acesso ao painel é: `netchaveapi`.
+## Como usar
+1. Acesse o link do painel.
+2. Digite a senha para autenticar.
+3. Insira um nome para seu banco e clique em "GERAR API DE BANCO".
+4. O link gerado será exibido na lista e estará disponível em qualquer dispositivo que você acessar.
 
-## 🛰️ Estrutura da API
-Cada banco gerado entrega um endpoint RESTful compatível com:
-- **GET**: Leitura de dados.
-- **PUT**: Atualização de informações.
-- **DELETE**: Remoção de banco de dados (via painel JSONbin).
-
----
-*Desenvolvido para ambientes mobile e integração rápida.*
+## Solução de problemas
+- Se o botão não responder, verifique se a sua conta no [JSONbin.io](https://jsonbin.io/) ainda possui créditos ou se a chave expirou.
+- Certifique-se de que o Bin da Lista Mestra está configurado como 'Private'.
