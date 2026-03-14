@@ -1,18 +1,15 @@
-# Painel NetBase
+# Painel NetBase - Firebase Edition
 
-Sistema de gerenciamento de bancos de dados via JSONbin.io.
+O Painel NetBase é um gerenciador de banco de dados em tempo real, agora integrado à infraestrutura do Firebase (Realtime Database).
 
-## Configurações Principais
-- **Senha do Painel:** `netchaveapi`
-- **ID da Lista Mestra:** `69b4a54aaa77b81da9e1eebf`
-- **Master Key:** Utilizada via autenticação segura no script principal.
+## Configuração do Projeto
+- **Projeto Firebase:** `real-gps-ed315`
+- **App ID:** `1:1032476157217:web:5539feae0ea17b71150a60`
+- **Banco de Dados:** Realtime Database (Sincronização em tempo real)
 
-## Como usar
-1. Acesse o link do painel.
-2. Digite a senha para autenticar.
-3. Insira um nome para seu banco e clique em "GERAR API DE BANCO".
-4. O link gerado será exibido na lista e estará disponível em qualquer dispositivo que você acessar.
+## Como utilizar (Deploy)
+Para publicar as alterações do painel no seu Firebase Hosting, utilize os comandos no terminal:
 
-## Solução de problemas
-- Se o botão não responder, verifique se a sua conta no [JSONbin.io](https://jsonbin.io/) ainda possui créditos ou se a chave expirou.
-- Certifique-se de que o Bin da Lista Mestra está configurado como 'Private'.
+1. **Definir alvo de deploy:**
+   ```bash
+   firebase target:apply hosting netbase real-gps-ed315
