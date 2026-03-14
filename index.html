@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetBase - Admin Panel</title>
+    <title>NetBase Admin</title>
     <style>
-        :root { --primary: #800080; --bg: #0f0f0f; --card: #1a1a1a; --accent: #ff4500; }
-        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
+        body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
         input { padding: 12px; width: 100%; border-radius: 5px; border: 1px solid #444; background: #000; color: white; margin-bottom: 10px; box-sizing: border-box; }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; }
-        .api-item { background: #252525; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: left; font-size: 0.8rem; border-left: 3px solid var(--primary); word-break: break-all; }
+        .btn { background: #800080; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; }
+        .api-item { background: #252525; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: left; font-size: 0.8rem; border-left: 3px solid #800080; word-break: break-all; }
         #admin-content { display: none; }
     </style>
 </head>
@@ -24,7 +23,7 @@
         <h3>Painel NetBase</h3>
         <input type="text" id="db-name" placeholder="Nome do novo banco...">
         <button class="btn" onclick="criarBanco()">GERAR API DE BANCO</button>
-        <div id="api-list">Carregando...</div>
+        <div id="api-list">Carregando lista...</div>
     </div>
     <script>
         const X_MASTER_KEY = "$2a$10$.Y/7iKOT314ACeDErCmKHOd2voGj1NSJ0fD1QMQcCDB8.WdyAT8LC";
@@ -45,37 +44,39 @@
                     headers: { 'X-Master-Key': X_MASTER_KEY }
                 });
                 const data = await res.json();
-                renderizarLista(data.record.bancos || []);
-            } catch(e) { document.getElementById('api-list').innerHTML = "Erro ao carregar lista."; }
+                const lista = data.record.bancos || [];
+                document.getElementById('api-list').innerHTML = lista.map(api => `
+                    <div class="api-item"><b>${api.nome}</b><br>${api.url}</div>
+                `).join('');
+            } catch(e) { alert("Erro ao carregar: " + e); }
         }
 
         async function criarBanco() {
-            const nome = document.getElementById('db-name').value || "MeuBanco";
-            const res = await fetch('https://api.jsonbin.io/v3/b', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
-                body: JSON.stringify({ app: nome, data: [] })
-            });
-            const data = await res.json();
-            const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
+            const nome = document.getElementById('db-name').value || "NovoBanco";
+            try {
+                // Criação
+                const res = await fetch('https://api.jsonbin.io/v3/b', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
+                    body: JSON.stringify({ nome: nome, data: [] })
+                });
+                const data = await res.json();
+                const novaAPI = { nome: nome, url: `https://api.jsonbin.io/v3/b/${data.metadata.id}` };
+                
+                // Atualização da lista
+                const getLista = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }});
+                const listaData = await getLista.json();
+                let lista = listaData.record.bancos || [];
+                lista.push(novaAPI);
 
-            const listaRes = await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}/latest`, { headers: { 'X-Master-Key': X_MASTER_KEY }});
-            const listaData = await listaRes.json();
-            let bancos = listaData.record.bancos || [];
-            bancos.push(novaAPI);
-            
-            await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
-                body: JSON.stringify({ bancos: bancos })
-            });
-            carregarListaNuvem();
-        }
-
-        function renderizarLista(lista) {
-            document.getElementById('api-list').innerHTML = lista.map(api => `
-                <div class="api-item"><b>📦 ${api.nome}</b><br>${api.url}</div>
-            `).reverse().join('');
+                await fetch(`https://api.jsonbin.io/v3/b/${LISTA_ID}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': X_MASTER_KEY },
+                    body: JSON.stringify({ bancos: lista })
+                });
+                carregarListaNuvem();
+                alert("API criada com sucesso!");
+            } catch(e) { alert("Erro na criação: " + e); }
         }
     </script>
 </body>
