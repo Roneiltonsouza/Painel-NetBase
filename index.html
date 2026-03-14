@@ -2,31 +2,34 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase Cloud</title>
+    <title>NetBase Cloud - Painel</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
         .box { width: 100%; max-width: 400px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: #800080; color: #fff; font-weight: bold; cursor: pointer; }
+        .item { background: #222; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-del { background: #ff4444; width: auto; padding: 5px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="login-box" class="box">
         <h3>Login NetBase</h3>
-        <input type="password" id="senha-acesso" placeholder="Digite a senha...">
+        <input type="password" id="senha-acesso" placeholder="Senha única...">
         <button onclick="entrar()">ENTRAR</button>
     </div>
 
     <div id="painel" class="box" style="display:none;">
-        <h3>Painel Gerador</h3>
-        <input type="text" id="api-nome" placeholder="Nome da API">
-        <button onclick="salvar()">GERAR E SALVAR API</button>
+        <h3>Suas APIs</h3>
+        <input type="text" id="api-nome" placeholder="Nome da API...">
+        <button onclick="salvar()">SALVAR API</button>
+        <div id="lista-apis"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBxWpIfwe1Iy90ss2IaTo8Ih38vmoa3iYk",
@@ -42,28 +45,41 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // A ÚNICA SENHA
-        const SENHA_UNICA = "netchaveapi"; 
-
+        // LOGIN
         window.entrar = () => {
-            const senha = document.getElementById('senha-acesso').value;
-            if(senha === SENHA_UNICA) {
+            if(document.getElementById('senha-acesso').value === "netchaveapi") {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('painel').style.display = 'block';
-            } else {
-                alert("Senha incorreta!");
-            }
+                carregarLista();
+            } else { alert("Senha incorreta!"); }
         };
 
+        // SALVAR
         window.salvar = () => {
-            const apiNome = document.getElementById('api-nome').value;
-            if(!apiNome) return alert("Preencha o nome!");
-            
-            push(ref(db, 'apis/'), { nome: apiNome }).then(() => {
-                alert("API Gerada!");
-                document.getElementById('api-nome').value = "";
-            });
+            const nome = document.getElementById('api-nome').value;
+            if(!nome) return;
+            push(ref(db, 'apis/'), { nome: nome });
+            document.getElementById('api-nome').value = "";
         };
+
+        // EXCLUIR
+        window.excluir = (id) => {
+            remove(ref(db, 'apis/' + id));
+        };
+
+        // LISTAR EM TEMPO REAL
+        function carregarLista() {
+            onValue(ref(db, 'apis/'), (snapshot) => {
+                const lista = document.getElementById('lista-apis');
+                lista.innerHTML = "";
+                snapshot.forEach((child) => {
+                    lista.innerHTML += `<div class="item">
+                        <span>${child.val().nome}</span>
+                        <button class="btn-del" onclick="excluir('${child.key}')">EXCLUIR</button>
+                    </div>`;
+                });
+            });
+        }
     </script>
 </body>
 </html>
