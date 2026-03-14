@@ -2,38 +2,43 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase Cloud - Edição Direta</title>
+    <title>NetBase Cloud - Gerador de IDs</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 10px; }
-        .box { width: 100%; max-width: 450px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        .box { width: 100%; max-width: 480px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        .input-group { display: flex; gap: 5px; margin-bottom: 20px; }
-        input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 25px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 15px; }
         
-        button { padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
-        .btn-add { background: #800080; min-width: 45px; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
+        .btn-add { background: #800080; min-width: 60px; font-size: 20px; }
+        .btn-add:hover { background: #a020f0; }
         
-        /* Estilo da Lista com Edição */
-        .item-container { background: #1a1a1a; padding: 10px; margin-top: 10px; border-radius: 8px; border-left: 4px solid #800080; }
-        .edit-group { display: flex; gap: 5px; margin-top: 8px; }
-        .btn-save-edit { background: #28a745; font-size: 11px; }
-        .btn-del { background: #ff4444; font-size: 11px; }
-        .label-api { font-size: 13px; color: #aaa; margin-left: 2px; }
+        /* Itens da Lista */
+        .item-container { background: #1a1a1a; padding: 15px; margin-top: 15px; border-radius: 10px; border-left: 5px solid #800080; }
+        .id-display { background: #000; padding: 8px; border-radius: 5px; font-family: monospace; font-size: 12px; color: #00ff00; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed #333; }
+        
+        .edit-group { display: flex; gap: 8px; }
+        .btn-save-edit { background: #28a745; flex: 1; }
+        .btn-copy-id { background: #444; font-size: 11px; padding: 5px 8px; }
+        .btn-del { background: #ff4444; }
+        
+        h3 { margin-top: 0; color: #800080; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <div id="login-box" class="box">
-        <h3>Login NetBase</h3>
-        <input type="password" id="senha-acesso" placeholder="Senha única...">
-        <button onclick="entrar()" style="width: 100%; margin-top: 10px; background: #800080;">ENTRAR</button>
+    <div id="login-box" class="box" style="text-align: center;">
+        <h3>Acesso Restrito</h3>
+        <input type="password" id="senha-acesso" placeholder="Digite sua netchaveapi...">
+        <button onclick="entrar()" style="width: 100%; margin-top: 15px; background: #800080; font-size: 16px;">ACESSAR PAINEL</button>
     </div>
 
     <div id="painel" class="box" style="display:none;">
-        <h3 style="margin-top:0;">Gerenciador NetBase</h3>
+        <h3>NetBase Cloud ID</h3>
         
         <div class="input-group">
-            <input type="text" id="api-nome" placeholder="Nova API...">
+            <input type="text" id="api-nome" placeholder="Nome do novo projeto/API...">
             <button class="btn-add" onclick="salvar()">+</button>
         </div>
 
@@ -76,11 +81,16 @@
             const novoNome = document.getElementById('edit-'+id).value;
             if(!novoNome) return;
             update(ref(db, 'apis/' + id), { nome: novoNome });
-            alert("Atualizado!");
+            alert("Nome atualizado!");
+        };
+
+        window.copiarID = (id) => {
+            navigator.clipboard.writeText(id);
+            alert("ID Copiado: " + id);
         };
 
         window.excluir = (id) => {
-            if(confirm("Deseja apagar?")) remove(ref(db, 'apis/' + id));
+            if(confirm("Apagar permanentemente?")) remove(ref(db, 'apis/' + id));
         };
 
         function carregarLista() {
@@ -88,15 +98,18 @@
                 const lista = document.getElementById('lista-apis');
                 lista.innerHTML = "";
                 snapshot.forEach((child) => {
-                    const id = child.key;
-                    const nome = child.val().nome;
+                    const idReal = child.key;
+                    const nomeAtual = child.val().nome;
                     lista.innerHTML += `
                         <div class="item-container">
-                            <div class="label-api">ID: ${id.substring(0,8)}...</div>
+                            <div class="id-display">
+                                <span>ID: ${idReal}</span>
+                                <button class="btn-copy-id" onclick="copiarID('${idReal}')">COPIAR ID</button>
+                            </div>
                             <div class="edit-group">
-                                <input type="text" id="edit-${id}" value="${nome}">
-                                <button class="btn-save-edit" onclick="atualizarAPI('${id}')">SALVAR</button>
-                                <button class="btn-del" onclick="excluir('${id}')">X</button>
+                                <input type="text" id="edit-${idReal}" value="${nomeAtual}">
+                                <button class="btn-save-edit" onclick="atualizarAPI('${idReal}')">SALVAR NOME</button>
+                                <button class="btn-del" onclick="excluir('${idReal}')">X</button>
                             </div>
                         </div>`;
                 });
