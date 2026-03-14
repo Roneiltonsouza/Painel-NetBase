@@ -1,38 +1,75 @@
-<div id="login-box">
-    <h2>Login NetBase</h2>
-    <input type="password" id="pass" placeholder="Digite sua senha...">
-    <button class="btn" onclick="entrar()">ENTRAR</button>
-</div>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>NetBase Cloud</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .box { width: 100%; max-width: 400px; background: #111; padding: 20px; border-radius: 12px; }
+        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        button { background: #800080; color: #fff; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-<div id="admin-content" style="display:none;">
-    <input type="text" id="db-name" placeholder="Nome do banco">
-    <input type="text" id="db-url" placeholder="URL">
-    <button class="btn" onclick="salvarBanco()">SALVAR NO FIREBASE</button>
-</div>
+    <div id="login-box" class="box">
+        <h3>Login NetBase</h3>
+        <input type="text" id="nome-usuario" placeholder="Digite seu nome...">
+        <button onclick="entrar()">ENTRAR</button>
+    </div>
 
-<script type="module">
-    // ... suas importações aqui ...
-    
-    // FUNÇÃO DE LOGIN
-    window.entrar = function() {
-        const senha = document.getElementById('pass').value;
-        if(senha === "netchaveapi") { // <-- Sua senha original aqui
-            document.getElementById('login-box').style.display = 'none';
-            document.getElementById('admin-content').style.display = 'block';
-        } else {
-            alert("Senha incorreta!");
-        }
-    };
+    <div id="painel" class="box" style="display:none;">
+        <h3>Painel NetBase</h3>
+        <input type="text" id="api-nome" placeholder="Nome da API">
+        <button onclick="salvar()">GERAR E SALVAR API</button>
+        <div id="status"></div>
+    </div>
 
-    // FUNÇÃO DE SALVAR (Só funciona após o login)
-    window.salvarBanco = function() {
-        const nome = document.getElementById('db-name').value;
-        const url = document.getElementById('db-url').value;
-        if(!nome || !url) return alert("Preencha tudo!");
-        
-        const novoRef = push(ref(db, 'bancos/'));
-        set(novoRef, { nome, url }).then(() => {
-            alert("Salvo com sucesso!");
-        });
-    };
-</script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxWpIfwe1Iy90ss2IaTo8Ih38vmoa3iYk",
+            authDomain: "netbase-cloud.firebaseapp.com",
+            databaseURL: "https://netbase-cloud-default-rtdb.firebaseio.com",
+            projectId: "netbase-cloud",
+            storageBucket: "netbase-cloud.firebasestorage.app",
+            messagingSenderId: "600974870892",
+            appId: "1:600974870892:web:626b717468391f197a0b49",
+            measurementId: "G-MQNP2MP3FS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Lógica de Login
+        window.entrar = () => {
+            const nome = document.getElementById('nome-usuario').value;
+            if(nome) {
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('painel').style.display = 'block';
+            } else {
+                alert("Por favor, digite seu nome.");
+            }
+        };
+
+        // Lógica de Salvar no Banco
+        window.salvar = () => {
+            const apiNome = document.getElementById('api-nome').value;
+            const usuario = document.getElementById('nome-usuario').value;
+            
+            if(!apiNome) return alert("Preencha o nome da API!");
+
+            push(ref(db, 'apis/'), { 
+                nome: apiNome, 
+                criadoPor: usuario,
+                data: new Date().toLocaleString()
+            }).then(() => {
+                alert("API Gerada com sucesso!");
+                document.getElementById('api-nome').value = "";
+            });
+        };
+    </script>
+</body>
+        </html>
