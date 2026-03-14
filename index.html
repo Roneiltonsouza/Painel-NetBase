@@ -2,18 +2,23 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase Cloud - Edição Rápida</title>
+    <title>NetBase Cloud - Edição Direta</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .box { width: 100%; max-width: 400px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 10px; }
+        .box { width: 100%; max-width: 450px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        
         .input-group { display: flex; gap: 5px; margin-bottom: 20px; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 16px; background: #222; color: #fff; }
-        button { padding: 12px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-salvar { background: #800080; color: #fff; min-width: 50px; }
-        .item { background: #222; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #800080; }
-        .btn-acao { width: auto; padding: 5px 8px; font-size: 12px; margin-left: 5px; }
-        .btn-del { background: #ff4444; color: white; }
-        .btn-copy { background: #444; color: white; }
+        input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; }
+        
+        button { padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-add { background: #800080; min-width: 45px; }
+        
+        /* Estilo da Lista com Edição */
+        .item-container { background: #1a1a1a; padding: 10px; margin-top: 10px; border-radius: 8px; border-left: 4px solid #800080; }
+        .edit-group { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-save-edit { background: #28a745; font-size: 11px; }
+        .btn-del { background: #ff4444; font-size: 11px; }
+        .label-api { font-size: 13px; color: #aaa; margin-left: 2px; }
     </style>
 </head>
 <body>
@@ -21,15 +26,15 @@
     <div id="login-box" class="box">
         <h3>Login NetBase</h3>
         <input type="password" id="senha-acesso" placeholder="Senha única...">
-        <button onclick="entrar()" style="width: 100%; margin-top: 10px; background: #800080; color: white;">ENTRAR</button>
+        <button onclick="entrar()" style="width: 100%; margin-top: 10px; background: #800080;">ENTRAR</button>
     </div>
 
     <div id="painel" class="box" style="display:none;">
-        <h3>Minhas APIs</h3>
+        <h3 style="margin-top:0;">Gerenciador NetBase</h3>
         
         <div class="input-group">
-            <input type="text" id="api-nome" placeholder="Escreva ou copie aqui...">
-            <button class="btn-salvar" onclick="salvar()">+</button>
+            <input type="text" id="api-nome" placeholder="Nova API...">
+            <button class="btn-add" onclick="salvar()">+</button>
         </div>
 
         <div id="lista-apis"></div>
@@ -37,7 +42,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBxWpIfwe1Iy90ss2IaTo8Ih38vmoa3iYk",
@@ -46,8 +51,7 @@
             projectId: "netbase-cloud",
             storageBucket: "netbase-cloud.firebasestorage.app",
             messagingSenderId: "600974870892",
-            appId: "1:600974870892:web:626b717468391f197a0b49",
-            measurementId: "G-MQNP2MP3FS"
+            appId: "1:600974870892:web:626b717468391f197a0b49"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -68,15 +72,15 @@
             input.value = "";
         };
 
-        // AGORA COPIA PARA O CAMPO DE ENTRADA
-        window.copiarParaInput = (texto) => {
-            const input = document.getElementById('api-nome');
-            input.value = texto;
-            input.focus(); // Coloca o cursor no campo
+        window.atualizarAPI = (id) => {
+            const novoNome = document.getElementById('edit-'+id).value;
+            if(!novoNome) return;
+            update(ref(db, 'apis/' + id), { nome: novoNome });
+            alert("Atualizado!");
         };
 
         window.excluir = (id) => {
-            remove(ref(db, 'apis/' + id));
+            if(confirm("Deseja apagar?")) remove(ref(db, 'apis/' + id));
         };
 
         function carregarLista() {
@@ -84,14 +88,17 @@
                 const lista = document.getElementById('lista-apis');
                 lista.innerHTML = "";
                 snapshot.forEach((child) => {
-                    const nomeApi = child.val().nome;
-                    lista.innerHTML += `<div class="item">
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; max-width: 180px;">${nomeApi}</span>
-                        <div>
-                            <button class="btn-acao btn-copy" onclick="copiarParaInput('${nomeApi}')">Copiar</button>
-                            <button class="btn-acao btn-del" onclick="excluir('${child.key}')">X</button>
-                        </div>
-                    </div>`;
+                    const id = child.key;
+                    const nome = child.val().nome;
+                    lista.innerHTML += `
+                        <div class="item-container">
+                            <div class="label-api">ID: ${id.substring(0,8)}...</div>
+                            <div class="edit-group">
+                                <input type="text" id="edit-${id}" value="${nome}">
+                                <button class="btn-save-edit" onclick="atualizarAPI('${id}')">SALVAR</button>
+                                <button class="btn-del" onclick="excluir('${id}')">X</button>
+                            </div>
+                        </div>`;
                 });
             });
         }
