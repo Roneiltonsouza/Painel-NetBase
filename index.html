@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NetBase Cloud - Gerador de IDs</title>
+    <title>NetBase Cloud</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 10px; }
         .box { width: 100%; max-width: 480px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -29,15 +29,15 @@
 
     <div id="login-box" class="box" style="text-align: center;">
         <h3>Acesso Restrito</h3>
-        <input type="password" id="senha-acesso" placeholder="Digite sua netchaveapi...">
+        <input type="password" id="senha-acesso" placeholder="Digite sua chave de acesso...">
         <button onclick="entrar()" style="width: 100%; margin-top: 15px; background: #800080; font-size: 16px;">ACESSAR PAINEL</button>
     </div>
 
     <div id="painel" class="box" style="display:none;">
-        <h3>NetBase Cloud ID</h3>
+        <h3>Painel de Controle</h3>
         
         <div class="input-group">
-            <input type="text" id="api-nome" placeholder="Nome do novo projeto/API...">
+            <input type="text" id="api-nome" placeholder="Nome do projeto...">
             <button class="btn-add" onclick="salvar()">+</button>
         </div>
 
@@ -46,7 +46,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBxWpIfwe1Iy90ss2IaTo8Ih38vmoa3iYk",
@@ -70,17 +70,15 @@
             return "AIza" + random;
         }
 
-        // Sistema de Login corrigido
         window.entrar = () => {
-            const inputSenha = document.getElementById('senha-acesso');
-            // Altere "netchaveapi" abaixo para a sua senha real se desejar
-            if(inputSenha.value === "netchaveapi") {
+            const pass = document.getElementById('senha-acesso').value;
+            // A senha continua sendo a mesma internamente, mas o nome não aparece na tela
+            if(pass === "netchaveapi") {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('painel').style.display = 'block';
-                carregarLista(); // Só carrega os dados após validar a senha
+                carregarLista();
             } else { 
-                alert("Acesso Negado: Chave Inválida!"); 
-                inputSenha.value = "";
+                alert("Chave incorreta!"); 
             }
         };
 
@@ -92,19 +90,19 @@
             input.value = "";
         };
 
+        window.copiarID = (id) => {
+            navigator.clipboard.writeText(id);
+            alert("ID copiado com sucesso!");
+        };
+
+        window.excluir = (id) => {
+            if(confirm("Excluir registro?")) remove(ref(db, 'apis/' + id));
+        };
+
         window.atualizarAPI = (id) => {
             const novoNome = document.getElementById('edit-'+id).value;
             if(!novoNome) return;
             update(ref(db, 'apis/' + id), { nome: novoNome });
-        };
-
-        window.copiarID = (id) => {
-            navigator.clipboard.writeText(id);
-            alert("ID Copiado para a área de transferência!");
-        };
-
-        window.excluir = (id) => {
-            if(confirm("Deseja apagar este ID permanentemente?")) remove(ref(db, 'apis/' + id));
         };
 
         function carregarLista() {
@@ -117,8 +115,8 @@
                     lista.innerHTML += `
                         <div class="item-container">
                             <div class="id-display">
-                                <span style="font-size: 10px;">ID PROTEGIDO</span>
-                                <button class="btn-copy-id" onclick="copiarID('${idReal}')">COPIAR ID</button>
+                                <span>ID: ••••••••••••••••••</span>
+                                <button class="btn-copy-id" onclick="copiarID('${idReal}')">COPIAR</button>
                             </div>
                             <div class="edit-group">
                                 <input type="text" id="edit-${idReal}" value="${nomeAtual}">
