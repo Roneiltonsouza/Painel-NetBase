@@ -14,7 +14,6 @@
         .btn-add { background: #800080; min-width: 60px; font-size: 20px; }
         .btn-add:hover { background: #a020f0; }
         
-        /* Itens da Lista */
         .item-container { background: #1a1a1a; padding: 15px; margin-top: 15px; border-radius: 10px; border-left: 5px solid #800080; }
         .id-display { background: #000; padding: 8px; border-radius: 5px; font-family: monospace; font-size: 12px; color: #00ff00; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed #333; }
         
@@ -47,7 +46,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBxWpIfwe1Iy90ss2IaTo8Ih38vmoa3iYk",
@@ -62,7 +61,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Função para gerar o ID no padrão AIza
         function gerarChaveAIza() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
             let random = '';
@@ -72,40 +70,41 @@
             return "AIza" + random;
         }
 
+        // Sistema de Login corrigido
         window.entrar = () => {
-            if(document.getElementById('senha-acesso').value === "netchaveapi") {
+            const inputSenha = document.getElementById('senha-acesso');
+            // Altere "netchaveapi" abaixo para a sua senha real se desejar
+            if(inputSenha.value === "netchaveapi") {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('painel').style.display = 'block';
-                carregarLista();
-            } else { alert("Senha incorreta!"); }
+                carregarLista(); // Só carrega os dados após validar a senha
+            } else { 
+                alert("Acesso Negado: Chave Inválida!"); 
+                inputSenha.value = "";
+            }
         };
 
         window.salvar = () => {
             const input = document.getElementById('api-nome');
             if(!input.value) return;
-            
-            // Gera o ID novo começando com AIza
             const novoID = gerarChaveAIza();
             set(ref(db, 'apis/' + novoID), { nome: input.value });
-            
             input.value = "";
-            alert("Nova API gerada com sucesso!");
         };
 
         window.atualizarAPI = (id) => {
             const novoNome = document.getElementById('edit-'+id).value;
             if(!novoNome) return;
             update(ref(db, 'apis/' + id), { nome: novoNome });
-            alert("Nome atualizado!");
         };
 
         window.copiarID = (id) => {
             navigator.clipboard.writeText(id);
-            alert("ID Copiado: " + id);
+            alert("ID Copiado para a área de transferência!");
         };
 
         window.excluir = (id) => {
-            if(confirm("Apagar permanentemente?")) remove(ref(db, 'apis/' + id));
+            if(confirm("Deseja apagar este ID permanentemente?")) remove(ref(db, 'apis/' + id));
         };
 
         function carregarLista() {
@@ -118,7 +117,7 @@
                     lista.innerHTML += `
                         <div class="item-container">
                             <div class="id-display">
-                                <span style="font-size: 10px;">${idReal}</span>
+                                <span style="font-size: 10px;">ID PROTEGIDO</span>
                                 <button class="btn-copy-id" onclick="copiarID('${idReal}')">COPIAR ID</button>
                             </div>
                             <div class="edit-group">
